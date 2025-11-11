@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캐릭터 프롬프트 빌더</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            color: #b0b0b0;
+            font-size: 1.1em;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-group {
+            margin-bottom: 20px;
+        }
+
+        .question-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d0d0d0;
+            font-weight: 500;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        option {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 6px 20px rgba(74, 85, 104, 0.4);
+        }
+
+        .result-section {
+            margin-top: 10px;
+        }
+
+        .result-item {
+            margin-bottom: 20px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .result-header h3 {
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            min-width: auto;
+            flex: none;
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #808080;
+            margin-top: 40px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #48bb78;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .copy-btn {
+                width: 100%;
+            }
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            border-radius: 8px;
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 85, 104, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>캐릭터 프롬프트 빌더</h1>
+            <p class="subtitle">30개의 질문으로 당신의 캐릭터를 완성하고, GPT, LLM, Midjourney용 프롬프트를 자동 생성하세요</p>
+        </header>
+
+        <div class="card">
+            <h2>📝 캐릭터 질문 (30개)</h2>
+            <div id="questions-container"></div>
+        </div>
+
+        <div class="card">
+            <h2>🎨 추가 옵션</h2>
+            <div class="question-group">
+                <label class="question-label" for="style-hint">스타일 힌트 (Midjourney용)</label>
+                <input type="text" id="style-hint" placeholder="예: anime style, digital art, cinematic lighting">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="negative-hint">네거티브 힌트 (Midjourney용)</label>
+                <input type="text" id="negative-hint" placeholder="예: low quality, blurry, distorted">
+            </div>
+            <div class="question-group">
+                <label class="question-label" for="image-options">이미지 비율/버전 (Midjourney용)</label>
+                <input type="text" id="image-options" placeholder="예: --ar 3:4 --v 6">
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚡ 액션</h2>
+            <div class="button-group">
+                <button onclick="generatePrompts()">프롬프트 생성</button>
+                <button onclick="copyAllPrompts()" class="secondary">전체 복사</button>
+                <button onclick="saveToLocalStorage()" class="secondary">선택 저장</button>
+                <button onclick="loadFromLocalStorage()" class="secondary">불러오기</button>
+                <button onclick="exportJSON()" class="secondary">JSON 내보내기</button>
+                <div class="file-input-wrapper">
+                    <input type="file" id="json-import" accept=".json" onchange="importJSON(event)">
+                    <label for="json-import" class="file-input-label">JSON 가져오기</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="results-card" style="display: none;">
+            <h2>✨ 생성된 프롬프트</h2>
+            
+            <div class="result-item">
+                <div class="result-header">
+                    <h3>GPT 프롬프트 (한국어)</h3>
+                    <button class="copy-btn" onclick="copyToClipboard('gpt-result')">복사</button>
+                </div>
+                <textarea id="gpt-result" readonly></textarea>
+            </div>
+
+            <div class="result-item">
+                <div class="result-header">
+                    <h3>BananaAI/일반 LLM 프롬프트 (한국어)</h3>
+                    <button class="copy-btn" onclick="copyToClipboard('llm-result')">복사</button>
+                </div>
+                <textarea id="llm-result" readonly></textarea>
+            </div>
+
+            <div class="result-item">
+                <div class="result-header">
+                    <h3>Midjourney/SDXL 프롬프트 (영어)</h3>
+                    <button class="copy-btn" onclick="copyToClipboard('midjourney-result')">복사</button>
+                </div>
+                <textarea id="midjourney-result" readonly></textarea>
+            </div>
+        </div>
+
+        <footer>
+            © 2025 Character Prompt Builder – Replit Static App
+        </footer>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const questions = [
+            {
+                id: 1,
+                text: "이 캐릭터는 어떤 존재인가요?",
+                options: {
+                    A: "인간",
+                    B: "동물",
+                    C: "인공물",
+                    D: "무생물",
+                    E: "신적 존재",
+                    F: "추상 개념"
+                }
+            },
+            {
+                id: 2,
+                text: "이 캐릭터는 어떻게 태어났나요?",
+                options: {
+                    A: "자연 출생",
+                    B: "인간이 만듦",
+                    C: "초자연적",
+                    D: "실험의 결과",
+                    E: "스스로 발생"
+                }
+            },
+            {
+                id: 3,
+                text: "이 캐릭터는 어떤 세계에서 살아가나요?",
+                options: {
+                    A: "현실",
+                    B: "판타지",
+                    C: "근미래",
+                    D: "꿈·의식",
+                    E: "다중우주"
+                }
+            },
+            {
+                id: 4,
+                text: "그 세계 속에서 이 캐릭터의 위치는 어디쯤인가요?",
+                options: {
+                    A: "세상을 이끄는 존재",
+                    B: "떠돌이",
+                    C: "조용한 관찰자",
+                    D: "누군가의 창조물",
+                    E: "사회 하층"
+                }
+            },
+            {
+                id: 5,
+                text: "인간(혹은 다른 존재)과는 어떤 관계를 맺나요?",
+                options: {
+                    A: "함께 협력",
+                    B: "반항·대립",
+                    C: "보호",
+                    D: "지배",
+                    E: "무관심"
+                }
+            },
+            {
+                id: 6,
+                text: "이 캐릭터의 기본 기질은 어떤가요?",
+                options: {
+                    A: "따뜻하고 온화",
+                    B: "냉정하고 이성적",
+                    C: "장난기·변덕",
+                    D: "말수 적음",
+                    E: "파괴적"
+                }
+            },
+            {
+                id: 7,
+                text: "감정은 어느 정도로 존재하나요?",
+                options: {
+                    A: "사람처럼 풍부",
+                    B: "제한적",
+                    C: "흉내만 냄",
+                    D: "없음"
+                }
+            },
+            {
+                id: 8,
+                text: "옳고 그름에 대한 기준은?",
+                options: {
+                    A: "선",
+                    B: "중립",
+                    C: "악",
+                    D: "상황에 따라 다름",
+                    E: "기준 없음"
+                }
+            },
+            {
+                id: 9,
+                text: "중요한 결정을 내릴 때 어떤 기준으로 판단하나요?",
+                options: {
+                    A: "논리",
+                    B: "감정",
+                    C: "직관",
+                    D: "무작위"
+                }
+            },
+            {
+                id: 10,
+                text: "세상과 타인에게 어떤 태도를 기본으로 갖나요?",
+                options: {
+                    A: "보호",
+                    B: "통제",
+                    C: "관찰",
+                    D: "파괴",
+                    E: "무관심"
+                }
+            },
+            {
+                id: 11,
+                text: "외형은 어떤 모습에 가깝나요?",
+                options: {
+                    A: "인간형",
+                    B: "동물형",
+                    C: "기계형",
+                    D: "무기·도구형",
+                    E: "형체가 모호한 추상형"
+                }
+            },
+            {
+                id: 12,
+                text: "전체적인 색감·질감의 인상은?",
+                options: {
+                    A: "따뜻한 자연색",
+                    B: "금속적·차가움",
+                    C: "어둡고 그림자",
+                    D: "빛남",
+                    E: "투명·무형"
+                }
+            },
+            {
+                id: 13,
+                text: "크기나 존재감은 어느 쪽인가요?",
+                options: {
+                    A: "작고 아담",
+                    B: "사람 크기",
+                    C: "거대",
+                    D: "형태가 수시로 변함"
+                }
+            },
+            {
+                id: 14,
+                text: "주변에 있을 때 소리·향·기운은?",
+                options: {
+                    A: "특정한 음색",
+                    B: "은은한 향",
+                    C: "완전 무음",
+                    D: "파동처럼 느껴짐"
+                }
+            },
+            {
+                id: 15,
+                text: "이 캐릭터를 상징하는 자연 원소는?",
+                options: {
+                    A: "불",
+                    B: "물",
+                    C: "바람",
+                    D: "땅",
+                    E: "빛",
+                    F: "어둠"
+                }
+            },
+            {
+                id: 16,
+                text: "지금 가장 바라는 것은 무엇인가요?",
+                options: {
+                    A: "생존",
+                    B: "탐구·발견",
+                    C: "복수",
+                    D: "구원",
+                    E: "자유"
+                }
+            },
+            {
+                id: 17,
+                text: "그 목표의 성격은 어떤가요?",
+                options: {
+                    A: "개인적",
+                    B: "집단적",
+                    C: "본능적",
+                    D: "설명하기 어려움"
+                }
+            },
+            {
+                id: 18,
+                text: "마음속 깊은 욕망은?",
+                options: {
+                    A: "인정",
+                    B: "사랑",
+                    C: "자유",
+                    D: "파괴",
+                    E: "평화"
+                }
+            },
+            {
+                id: 19,
+                text: "가장 두려운 것은?",
+                options: {
+                    A: "소멸",
+                    B: "배신",
+                    C: "변화",
+                    D: "정체(제자리)",
+                    E: "자기 자신"
+                }
+            },
+            {
+                id: 20,
+                text: "이 캐릭터를 움직이는 신념 한 줄은?",
+                options: {
+                    A: "모든 생명엔 의미가 있다",
+                    B: "강자가 지배해야 한다",
+                    C: "감정은 약점이다",
+                    D: "모든 것은 순환한다",
+                    E: "세상은 이미 끝났다"
+                }
+            },
+            {
+                id: 21,
+                text: "다른 존재와는 주로 어떤 관계를 맺나요?",
+                options: {
+                    A: "친구",
+                    B: "상하관계",
+                    C: "경쟁자",
+                    D: "의존",
+                    E: "혼자"
+                }
+            },
+            {
+                id: 22,
+                text: "외로움에 대한 태도는?",
+                options: {
+                    A: "두려워함",
+                    B: "익숙함",
+                    C: "무관심",
+                    D: "오히려 즐김"
+                }
+            },
+            {
+                id: 23,
+                text: "사랑을 이해하거나 느낄 줄 아나요?",
+                options: {
+                    A: "깊이 이해·공감",
+                    B: "논리적으로만 앎",
+                    C: "감정적으로 회피",
+                    D: "사랑을 파괴함"
+                }
+            },
+            {
+                id: 24,
+                text: "갈등이 생기면 어떻게 반응하나요?",
+                options: {
+                    A: "대화로 해결",
+                    B: "피하거나 도주",
+                    C: "감정 폭발",
+                    D: "조용히 조종"
+                }
+            },
+            {
+                id: 25,
+                text: "타인에게 어떤 영향을 주는 존재인가요?",
+                options: {
+                    A: "영감",
+                    B: "두려움",
+                    C: "유혹",
+                    D: "성장·시험"
+                }
+            },
+            {
+                id: 26,
+                text: "이 캐릭터를 떠올리면 어떤 색이 가장 먼저 생각나나요?",
+                options: {
+                    A: "빨강",
+                    B: "파랑",
+                    C: "초록",
+                    D: "검정",
+                    E: "흰색"
+                }
+            },
+            {
+                id: 27,
+                text: "어떤 계절(또는 시간대)이 가장 잘 어울리나요?",
+                options: {
+                    A: "봄",
+                    B: "여름",
+                    C: "가을",
+                    D: "겨울",
+                    E: "밤"
+                }
+            },
+            {
+                id: 28,
+                text: "이야기 속 역할은 무엇인가요?",
+                options: {
+                    A: "주인공",
+                    B: "조력자",
+                    C: "라이벌",
+                    D: "적대자",
+                    E: "세계(배경)의 의인화"
+                }
+            },
+            {
+                id: 29,
+                text: "이 캐릭터의 테마(이야기의 축)는?",
+                options: {
+                    A: "자유 vs 통제",
+                    B: "생명 vs 기계",
+                    C: "사랑 vs 공허",
+                    D: "창조 vs 파괴",
+                    E: "질서 vs 혼돈"
+                }
+            },
+            {
+                id: 30,
+                text: "이 캐릭터의 결말은 어떻게 끝나나요?",
+                options: {
+                    A: "승리",
+                    B: "희생",
+                    C: "타락",
+                    D: "소멸",
+                    E: "재탄생"
+                }
+            }
+        ];
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-group';
+                
+                const label = document.createElement('label');
+                label.className = 'question-label';
+                label.textContent = `${q.id}. ${q.text}`;
+                
+                const select = document.createElement('select');
+                select.id = `q${q.id}`;
+                
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- 선택하세요 --';
+                select.appendChild(defaultOption);
+                
+                Object.entries(q.options).forEach(([key, value]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${key}. ${value}`;
+                    select.appendChild(option);
+                });
+                
+                div.appendChild(label);
+                div.appendChild(select);
+                container.appendChild(div);
+            });
+        }
+
+        function getSelectedAnswers() {
+            const answers = {};
+            questions.forEach(q => {
+                const select = document.getElementById(`q${q.id}`);
+                if (select.value) {
+                    answers[q.id] = {
+                        code: select.value,
+                        text: q.options[select.value]
+                    };
+                }
+            });
+            return answers;
+        }
+
+        function generateSummary(answers) {
+            let summary = '';
+            Object.entries(answers).forEach(([qId, answer]) => {
+                const question = questions.find(q => q.id == qId);
+                summary += `${question.text} → ${answer.text}\n`;
+            });
+            return summary;
+        }
+
+        function generatePrompts() {
+            const answers = getSelectedAnswers();
+            
+            if (Object.keys(answers).length === 0) {
+                showToast('최소 하나 이상의 질문에 답변해주세요.');
+                return;
+            }
+
+            const summary = generateSummary(answers);
+            const styleHint = document.getElementById('style-hint').value;
+            const negativeHint = document.getElementById('negative-hint').value;
+            const imageOptions = document.getElementById('image-options').value;
+
+            const gptPrompt = `당신은 캐릭터 디자이너입니다. 아래 설정을 바탕으로 한국어 캐릭터 시트를 작성하세요.
+
+[설정 요약]
+${summary}
+
+섹션: 
+1) 개요(한 문장) 
+2) 세계관 
+3) 외형(키/체형/색감/질감/제스처) 
+4) 성격(가치관/말투/버릇)
+5) 능력과 한계 
+6) 관계·감정선 
+7) 목표·갈등 
+8) 상징·테마 
+9) 핵심 대사 3줄 
+10) 이미지 프롬프트(1줄)
+
+문체: 간결하지만 생생하게, 클리셰 최소화. 누락 정보는 상식선에서 창의적으로 보완.`;
+
+            const llmPrompt = `SYSTEM: 너는 세계관/캐릭터 기획 전문가다.
+
+USER: 아래 설정을 바탕으로 600~900자 캐릭터 설명을 한국어로 작성해줘.
+포함: 세계관, 외형, 성격, 목표, 약점, 테마, 캐치프레이즈.
+
+[설정 요약]
+${summary}`;
+
+            const midjourneyElements = [];
+            
+            if (answers[11]) midjourneyElements.push(`form: ${answers[11].text}`);
+            if (answers[12]) midjourneyElements.push(`texture: ${answers[12].text}`);
+            if (answers[13]) midjourneyElements.push(`size: ${answers[13].text}`);
+            if (answers[15]) midjourneyElements.push(`element: ${answers[15].text}`);
+            if (answers[26]) midjourneyElements.push(`color: ${answers[26].text}`);
+            if (answers[27]) midjourneyElements.push(`season: ${answers[27].text}`);
+            if (answers[6]) midjourneyElements.push(`mood: ${answers[6].text}`);
+            if (answers[29]) midjourneyElements.push(`theme: ${answers[29].text}`);
+
+            let midjourneyPrompt = midjourneyElements.join(', ');
+            
+            if (styleHint) {
+                midjourneyPrompt += `, ${styleHint}`;
+            }
+            
+            if (negativeHint) {
+                midjourneyPrompt += ` --no ${negativeHint}`;
+            }
+            
+            if (imageOptions) {
+                midjourneyPrompt += ` ${imageOptions}`;
+            }
+
+            document.getElementById('gpt-result').value = gptPrompt;
+            document.getElementById('llm-result').value = llmPrompt;
+            document.getElementById('midjourney-result').value = midjourneyPrompt;
+            
+            document.getElementById('results-card').style.display = 'block';
+            document.getElementById('results-card').scrollIntoView({ behavior: 'smooth' });
+            
+            showToast('프롬프트가 생성되었습니다!');
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+            
+            const labels = {
+                'gpt-result': 'GPT 프롬프트',
+                'llm-result': 'LLM 프롬프트',
+                'midjourney-result': 'Midjourney 프롬프트'
+            };
+            
+            showToast(`${labels[elementId]}가 복사되었습니다!`);
+        }
+
+        function copyAllPrompts() {
+            const gpt = document.getElementById('gpt-result').value;
+            const llm = document.getElementById('llm-result').value;
+            const midjourney = document.getElementById('midjourney-result').value;
+            
+            if (!gpt && !llm && !midjourney) {
+                showToast('먼저 프롬프트를 생성해주세요.');
+                return;
+            }
+            
+            const allPrompts = `[GPT 프롬프트]\n${gpt}\n\n---\n\n[LLM 프롬프트]\n${llm}\n\n---\n\n[Midjourney 프롬프트]\n${midjourney}`;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = allPrompts;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            showToast('모든 프롬프트가 복사되었습니다!');
+        }
+
+        function saveToLocalStorage() {
+            const data = {
+                answers: {},
+                styleHint: document.getElementById('style-hint').value,
+                negativeHint: document.getElementById('negative-hint').value,
+                imageOptions: document.getElementById('image-options').value
+            };
+            
+            questions.forEach(q => {
+                const select = document.getElementById(`q${q.id}`);
+                if (select.value) {
+                    data.answers[q.id] = select.value;
+                }
+            });
+            
+            localStorage.setItem('characterPromptBuilder', JSON.stringify(data));
+            showToast('선택이 저장되었습니다!');
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('characterPromptBuilder');
+            
+            if (!saved) {
+                showToast('저장된 데이터가 없습니다.');
+                return;
+            }
+            
+            const data = JSON.parse(saved);
+            
+            Object.entries(data.answers).forEach(([qId, code]) => {
+                const select = document.getElementById(`q${qId}`);
+                if (select) {
+                    select.value = code;
+                }
+            });
+            
+            document.getElementById('style-hint').value = data.styleHint || '';
+            document.getElementById('negative-hint').value = data.negativeHint || '';
+            document.getElementById('image-options').value = data.imageOptions || '';
+            
+            showToast('저장된 선택을 불러왔습니다!');
+        }
+
+        function exportJSON() {
+            const characterProfile = {};
+            
+            questions.forEach(q => {
+                const select = document.getElementById(`q${q.id}`);
+                if (select.value) {
+                    characterProfile[q.id] = { answer: select.value };
+                }
+            });
+            
+            const exportData = { character_profile: characterProfile };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `character_profile_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('JSON 파일이 다운로드되었습니다!');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (!data.character_profile) {
+                        showToast('올바른 형식의 JSON 파일이 아닙니다.');
+                        return;
+                    }
+                    
+                    questions.forEach(q => {
+                        const select = document.getElementById(`q${q.id}`);
+                        select.value = '';
+                    });
+                    
+                    Object.entries(data.character_profile).forEach(([qId, obj]) => {
+                        const select = document.getElementById(`q${qId}`);
+                        if (select && obj.answer) {
+                            select.value = obj.answer;
+                        }
+                    });
+                    
+                    showToast('JSON 파일을 성공적으로 가져왔습니다!');
+                } catch (error) {
+                    showToast('JSON 파일을 읽는 중 오류가 발생했습니다.');
+                }
+            };
+            reader.readAsText(file);
+            
+            event.target.value = '';
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        renderQuestions();
+    </script>
+</body>
+</html>
