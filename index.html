@@ -745,53 +745,48 @@
                 return;
             }
 
-            const summary = generateSummary(answers);
             const styleHint = document.getElementById('style-hint').value;
             const negativeHint = document.getElementById('negative-hint').value;
             const imageOptions = document.getElementById('image-options').value;
 
-            const gptPrompt = `당신은 캐릭터 디자이너입니다. 아래 설정을 바탕으로 한국어 캐릭터 시트를 작성하세요.
+            let qaSection = '';
+            questions.forEach(q => {
+                if (answers[q.id]) {
+                    qaSection += `Q${q.id}. ${q.text}\n`;
+                    qaSection += `A${q.id}. ${answers[q.id].text}\n\n`;
+                }
+            });
 
-[설정 요약]
-${summary}
+            const gptPrompt = `You are an expert character concept artist.
+Create a single full-body character illustration based on the following Q&A profile.
+Reflect every answer faithfully in the design, atmosphere, and lighting.
 
-섹션: 
-1) 개요(한 문장) 
-2) 세계관 
-3) 외형(키/체형/색감/질감/제스처) 
-4) 성격(가치관/말투/버릇)
-5) 능력과 한계 
-6) 관계·감정선 
-7) 목표·갈등 
-8) 상징·테마 
-9) 핵심 대사 3줄 
-10) 이미지 프롬프트(1줄)
+${qaSection}Please generate a single highly detailed character illustration that visually embodies all of the above answers.`;
 
-문체: 간결하지만 생생하게, 클리셰 최소화. 누락 정보는 상식선에서 창의적으로 보완.`;
+            const llmPrompt = `SYSTEM: You are a character design specialist.
 
-            const llmPrompt = `SYSTEM: 너는 세계관/캐릭터 기획 전문가다.
+USER: Based on the Q&A profile below, create a comprehensive character design document in Korean (600-900 characters).
+Include: worldview, appearance, personality, goals, weaknesses, themes, and catchphrase.
 
-USER: 아래 설정을 바탕으로 600~900자 캐릭터 설명을 한국어로 작성해줘.
-포함: 세계관, 외형, 성격, 목표, 약점, 테마, 캐치프레이즈.
-
-[설정 요약]
-${summary}`;
+${qaSection}`;
 
             const midjourneyElements = [];
             
-            if (answers[2]) midjourneyElements.push(`form: ${answers[2].text}`);
-            if (answers[9]) midjourneyElements.push(`look&texture: ${answers[9].text}`);
-            if (answers[11]) midjourneyElements.push(`size: ${answers[11].text}`);
-            if (answers[6]) midjourneyElements.push(`symbol: ${answers[6].text}`);
-            if (answers[8]) midjourneyElements.push(`color: ${answers[8].text}`);
-            if (answers[27]) midjourneyElements.push(`season: ${answers[27].text}`);
-            if (answers[30]) midjourneyElements.push(`mood: ${answers[30].text}`);
-            if (answers[1]) midjourneyElements.push(`theme: ${answers[1].text}`);
+            if (answers[2]) midjourneyElements.push(answers[2].text);
+            if (answers[9]) midjourneyElements.push(answers[9].text);
+            if (answers[11]) midjourneyElements.push(answers[11].text);
+            if (answers[6]) midjourneyElements.push(answers[6].text);
+            if (answers[8]) midjourneyElements.push(answers[8].text);
+            if (answers[27]) midjourneyElements.push(answers[27].text);
+            if (answers[30]) midjourneyElements.push(answers[30].text);
+            if (answers[1]) midjourneyElements.push(answers[1].text);
 
             let midjourneyPrompt = midjourneyElements.join(', ');
             
             if (styleHint) {
-                midjourneyPrompt += `, ${styleHint}`;
+                midjourneyPrompt += ` --style ${styleHint}`;
+            } else {
+                midjourneyPrompt += ' --style ethereal, minimalist, dreamlike, cinematic lighting';
             }
             
             if (negativeHint) {
